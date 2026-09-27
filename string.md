@@ -1,56 +1,65 @@
-# constructor
-以下为常见构造：
-1. `string (const string& str)`拷贝一个其他的string类型
-2. `string(const string& str, size_t pos, size_t len = npos)`从str字符串的pos位置开始，向后拷贝len个字符
-3. `string (size_t n, char c)`构造n个字母c
-4. `string (const char* s)`拷贝字符串常量
-# getline和流输入
-我们使用cin>>时候默认遇到空格或换行符就会停止输入，但是有时候我们想要保留空格或者使用我们指定的符号作为终止，这时候就用到getline
-```cpp
+# std::string 速查
 
-istream& getline (istream& is, string& str, char delim);
-istream& getline (istream& is, string& str);
-```
-delim是自定义结束符
-# Element access
-1. 使用[]操作符，和数组使用类似
-2. at操作符，`string topic;topic.at(2)`与1的区别为这个会抛异常
-3. front和back取首尾字符
-# Iterators迭代器与遍历
-1. []＋下标遍历
+`#include <string>`。`std::string` 管理一段可修改的文本；拷贝后两个字符串的内容可分别修改。
+
+## 1. 构造与状态
+
 ```cpp
-int count = 0;
-	//下标＋[]
-	for (size_t i = 0;i < preview.size();i++)
-	{
-		if (preview[i] == ' ')
-		{
-			++count;
-			preview[i] = '_';
-		}
-	}
+string a;                    // 空串
+string b = "Date class";     // 从字符串字面量构造
+string c(b);                 // 拷贝
+string d(b, 5, 5);           // 从位置 5 取最多 5 个字符：class
+string line(20, '-');        // 20 个 '-'
 ```
-2. 范围for
+
+`size()` 返回长度，`empty()` 判断是否为空；空格也算一个字符。截取构造的起点超过原串长度会抛出 `out_of_range`。
+
+## 2. 输入
+
+`cin >> s` 读到空白字符就停；`getline(cin, s)` 读一整行，包括中间的空格，但不把结尾换行存入 `s`。`getline(cin, s, delim)` 可指定结束符，结束符会被读取但不存入 `s`。
+
+若前面用了 `cin >>`，行尾换行通常仍留在输入流里；紧接着调用 `getline` 可能先读到空串。需要按输入格式先处理这一行的剩余内容。
+
+## 3. 访问与遍历
+
+- `s[i]` 访问下标；`s.at(i)` 会对越界下标抛异常。
+- `s.front()` / `s.back()` 取首尾字符；空串时不要调用。
+- 下标循环适合需要位置的场景；范围 `for (char& ch : s)` 可直接修改字符；迭代器从 `begin()` 走到 `end()`，`end()` 本身不指向字符。
+- 同一个字符串上连续运行三种“替换空格”循环，第一种已经替换的空格，后两种就不会再遇到；要比较三种方法，可给它们各用一份副本。
+
+## 4. 运算符与比较
+
+- `=` 赋值，`+` 生成拼接结果，`+=` 在原字符串后面追加。
+- `==` / `!=` 判断内容是否相同；`<` / `>` 做字典序比较，适合按文本排序，不等于比较长度。
+- `string copy = original;` 后修改 `copy`，`original` 不会跟着改变。
+
+## 5. 修改内容
+
+| 操作 | 用途 |
+|---|---|
+| `push_back(c)` | 尾部加一个字符 |
+| `append(text)` | 尾部追加文本 |
+| `insert(pos, text)` | 在位置 `pos` 前插入文本 |
+| `replace(pos, n, text)` | 从 `pos` 起替换最多 `n` 个旧字符 |
+| `erase(pos, n)` | 从 `pos` 起删除最多 `n` 个字符；省略 `n` 则删到末尾 |
+| `clear()` | 清空内容；之后 `empty()` 为 `true` |
+
+插入、删除或替换后，后续位置可能改变；要用**修改后的字符串**重新计算位置。之前保存的迭代器或字符引用也可能失效。
+
+## 6. 查找与截取
+
 ```cpp
-//auto范围for
-for (char& ch : preview)//这里ch加引用修改原值
-{
-	if (ch == ' ')
-	{
-		++count;
-		ch = '_';
-	}
-}
+size_t pos = s.find("Date");
+if (pos == string::npos) cout << "未找到";
+else cout << "从位置 " << pos << " 开始";
 ```
-3. 迭代器
-```cpp
-//迭代器
-for (auto it = preview.begin();it != preview.end();++it)
-{
-	if (*it == ' ')
-	{
-		++count;
-		*it = '_';
-	}
-}
-```
+
+- `find(text)` 找第一次出现的位置；`find(text, start)` 从指定位置继续找；`rfind(text)` 找最后一次出现的位置。
+- `npos` 表示找不到；位置 `0` 是有效结果，不等于“没找到”。使用位置前先检查 `npos`。
+- `substr(pos, n)` 从 `pos` 起复制最多 `n` 个字符，返回新字符串；第二个参数是**长度**，省略它则取到末尾。`pos == size()` 得到空串，`pos > size()` 抛异常。
+
+## 后续实践
+
+待学：重复查找、容量与 C 字符串接口、数字转换、UTF-8 文本的字节位置。随后实现一个简化版 `MyString`，重点练动态存储、长度与容量、构造/拷贝/赋值、追加和查找，再用它完成一个小项目。这是学习模型，不追求复刻标准库的全部行为。
+
+接口目录：[cplusplus.com：std::string](https://cplusplus.com/reference/string/string/)。
